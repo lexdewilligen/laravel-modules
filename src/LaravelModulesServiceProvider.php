@@ -2,6 +2,7 @@
 
 namespace Nwidart\Modules;
 
+use Illuminate\Support\Facades\Schema;
 use Nwidart\Modules\Contracts\RepositoryInterface;
 use Nwidart\Modules\Support\Stub;
 
@@ -12,6 +13,10 @@ class LaravelModulesServiceProvider extends ModulesServiceProvider
      */
     public function boot()
     {
+        if (!Schema::hasTable(config('modules.activators.database.table'))) {
+            return;
+        }
+
         $this->registerNamespaces();
         $this->registerModules();
     }
@@ -24,6 +29,7 @@ class LaravelModulesServiceProvider extends ModulesServiceProvider
         $this->registerServices();
         $this->setupStubPath();
         $this->registerProviders();
+        $this->registerMigrations();
     }
 
     /**
@@ -49,6 +55,10 @@ class LaravelModulesServiceProvider extends ModulesServiceProvider
     {
         $this->app->singleton(Contracts\RepositoryInterface::class, function ($app) {
             $path = $app['config']->get('modules.paths.modules');
+
+            if ($app['config']->get('modules.activator') === 'database') {
+                return new Laravel\LaravelDatabaseRepository($app, $path);
+            }
 
             return new Laravel\LaravelFileRepository($app, $path);
         });
